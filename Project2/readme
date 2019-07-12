@@ -5,3 +5,8 @@ Developed a simple and multivariable linear regression to establish a relation b
 the dependent variable and 5 independent variables in Python.
 Analyzed basic statistics to find any possible dependencies among the variables.
 Estimated regression parameters and determined the goodness of fit through residual analysis.
+
+
+Task 1. Basic Statistics Analysis
+Task 2: Simple Linear Regression
+Task 3. Linear Multivariable Regression
