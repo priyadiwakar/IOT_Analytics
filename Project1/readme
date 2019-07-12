@@ -1,0 +1,9 @@
+Event-based Simulation for Re-certification of IoT devices
+
+The project aimed to simulate the arrival of events at different inter-arrival and
+retransmission rates to a server with a fixed buffer size.
+
+The project was divided into 2 tasks
+Task 1 Hand simulation: The objective was to understand the events, the clocks, and how the simulation advances from one event to another.
+Task 2 Code simulation: Simulation code in Python to reproduce task 1 results and 
+analyze the effect of different clock times and server buffer size, on the time delay and processing time for the events.
