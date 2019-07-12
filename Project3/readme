@@ -3,3 +3,8 @@ Time Series Forecasting
 Utilized three forecasting algorithms to determine the best model for a time series.
 Fit a simple moving average model, exponential smoothing model and AR model.
 Compared the models based on predicted values and accuracy.
+
+Task 1. Check for stationarity
+Task 2. Fit a simple moving average model (use the training set)
+Task 3. Fit an exponential smoothing model (use the training set)
+Task 4. Fit an AR(p) model (use the training set)
