@@ -1,0 +1,284 @@
+# -*- coding: utf-8 -*-
+"""
+Usage : 
+python task3 --InterArrivalTime INTERARRIVALTIME 
+                       --RetransmissionTime RETRANSMISSIONTIME 
+                       --ServiceTime SERVICETIME 
+                       --BufferSize BUFFERSIZE
+                       
+
+"""
+
+import argparse
+import random
+import math
+import numpy as np
+import heapq
+import csv
+
+
+
+
+random.seed(1)
+def getCLR(RT):
+    
+    newRT=-math.log(1-random.random())*RT
+    return newRT
+
+def getCLA(IAT):
+    
+    newIAT=-math.log(1-random.random())*IAT
+    return newIAT
+
+parser = argparse.ArgumentParser(description='Get inputs for simulation.')
+parser.add_argument('--InterArrivalTime', required=True, type=float,help='The inter arrival time of packets')
+parser.add_argument('--RetransmissionTime', required=True, type=float,help='The retransmission time of orbiting packets')
+parser.add_argument('--ServiceTime', required=True, type=float,help='The service arrival time for packets')
+parser.add_argument('--BufferSize', required=True, type=int,help='The Buffer Size')
+
+
+args = parser.parse_args()
+IAT=args.InterArrivalTime
+RT=args.RetransmissionTime
+ST=args.ServiceTime
+BfS=args.BufferSize
+
+#Lets assume the first arival time of the packet (here 2). Let the server be idle at start of simulation
+MCL=0 #Master clock time
+currBfS=0
+CLA=2
+CLS=None
+CLR=[]
+ind=0
+buffer=[]
+event_occur=2
+n=0 
+mydict={}
+T=[]
+D=[]
+
+
+#df['D'].notnull().sum()!=51000
+#we run simulation till end time
+while (n!=51000):
+    
+    if event_occur==1:
+        
+        
+        MCL=CLR[0][0]
+        currid=CLR[0][1]
+        heapq.heappop(CLR)
+        
+        if currBfS<BfS:
+            currBfS +=1
+            buffer.insert(0,currid)
+            mydict[currid][1]=MCL
+            if CLS==None:
+                CLS=MCL+ST
+            
+        else:
+            newRT=MCL+getCLR(RT)
+            heapq.heappush(CLR, (newRT,currid))
+            
+            #CLR.append([currid,round(MCL+newRT,4)])
+        
+    elif event_occur==2:
+        MCL=CLA
+        mydict[ind]=[MCL,MCL,0]
+        
+        
+        if currBfS<BfS:
+            currBfS +=1
+            buffer.insert(0,ind)
+            mydict[ind][1]=MCL
+            
+            if CLS==None:
+                CLS=MCL+ST
+        else:
+            newRT=MCL+getCLR(RT)
+            heapq.heappush(CLR, (newRT,ind))
+            
+            #CLR.append([ind,round(MCL+newRT,4)])
+        ind+=1
+        newIAT=getCLA(IAT)
+        CLA=CLA+newIAT
+            
+    else:
+        MCL=CLS
+        
+        if currBfS!=0:
+            currBfS -=1
+            curr=buffer.pop()
+            mydict[curr][2]=MCL
+            CLS=MCL+ST
+            n+=1
+        
+        else:
+            CLS=None
+        
+       
+    
+    
+    
+    ##Check for next event occuring      
+    #the priority for events is 1.Retransmission 2. New Arrival 3.Service completion
+
+    if (not CLR) and CLS!=None:
+        
+        if CLA<CLS:
+            event_occur=2
+            #print(ind)
+            #MCL=CLA
+        else:
+            event_occur=3
+            #MCL=CLS
+    
+    elif (not CLR) and CLS==None:
+        event_occur=2
+        #print(ind)
+        #MCL=CLA
+    elif CLR and CLS==None:
+        
+        clr=CLR[0][0]
+        if clr<=CLA:
+            event_occur=1
+        else:
+            event_occur=2
+    
+    else:
+        
+        
+        clr=CLR[0][0]
+        if clr<=CLA and clr<=CLS:
+            event_occur=1
+            
+            #MCL=clr
+            
+        elif CLA<=CLS and CLA<clr:
+            event_occur=2
+            #MCL=CLA
+        else:
+            event_occur=3
+            
+            #MCL=CLS
+
+#save results to csv file
+#filename='result_BFS_'+str(BfS)+'.csv'    #this is when varying buffer size     
+filename='result_ST_'+str(ST)+'.csv'           
+with open(filename,'w', newline='') as myfile:
+    w = csv.writer(myfile)
+    w.writerow(['Arrival No.','Arrival Time','Buffer Entry Time','Service Completion Time'])
+    for key,items in mydict.items():
+        if items[2]!=0:
+            w.writerow([key,items[0],items[1],items[2]])
+           
+
+T0=np.asarray([v[0] for k,v in mydict.items() if v[0]!=0 and v[2]!=0])
+T1=np.asarray([v[1] for k,v in mydict.items() if v[1]!=0 and v[2]!=0])
+T2=np.asarray([v[2] for k,v in mydict.items() if v[2]!=0])
+
+T0=T0[1000:]
+T1=T1[1000:]
+T2=T2[1000:]
+
+T=T2-T0
+D=T1-T0
+
+
+#split into 50 batches
+T_batch=np.split(T,50)
+D_batch=np.split(D,50)
+#mean of each batch
+meanT=np.mean(T_batch,axis=1,dtype='float32')
+meanD=np.mean(D_batch,axis=1,dtype='float32')
+#mean
+supermeanT=np.mean(meanT,dtype='float32')  
+supermeanD=np.mean(meanD,dtype='float32')    
+
+#95th percentile each batch
+T_batch=[np.sort(i) for i in T_batch]
+D_batch=[np.sort(i) for i in D_batch]
+T95=np.asarray([i[949] for i in T_batch])
+D95=np.asarray([i[949] for i in D_batch])
+#95th percentile
+T95mean=np.mean(T95,dtype='float32')
+D95mean=np.mean(D95,dtype='float32')
+
+#standard deviation mean
+stdT=np.std(meanT,dtype='float32')
+stdD=np.std(meanD,dtype='float32')
+
+#Confidence Interval calculations for mean
+pmTmean=1.96*stdT/np.sqrt(50)
+pmDmean=1.96*stdD/np.sqrt(50)
+
+upperTmean=supermeanT+pmTmean
+lowerTmean=supermeanT-pmTmean
+
+upperDmean=supermeanD+pmDmean
+lowerDmean=supermeanD-pmDmean
+
+
+#standard deviation 95th percentile
+stdTp=np.std(T95,dtype='float32')
+stdDp=np.std(D95,dtype='float32')
+
+#Confidence Interval calculations for mean
+pmTper=1.96*stdTp/np.sqrt(50)
+pmDper=1.96*stdDp/np.sqrt(50)
+
+upperTper=T95mean+pmTper
+lowerTper=T95mean-pmTper
+
+upperDper=D95mean+pmDper
+lowerDper=D95mean-pmDper
+
+#save output to text file
+f=open('output.txt','a')
+f.write("For Service Time "+str(ST)+"\n")
+f.write("Mean value for T is : "+str(supermeanT)+"\n")
+f.write("Mean value for D is : "+str(supermeanD)+"\n")
+f.write("95th percentile value for T is : "+str(T95mean)+"\n")
+f.write("95th percentile value for D is : "+str(D95mean)+"\n")
+f.write("Confidence interval for mean of T is : ( "+str(lowerTmean)+" , "+str(upperTmean)+" )\n")
+f.write("Confidence interval for mean of D is : ( "+str(lowerDmean)+" , "+str(upperDmean)+" )\n")
+f.write("Confidence interval for 95th percentile of T is : ( "+str(lowerTper)+" , "+str(upperTper)+" )\n")
+f.write("Confidence interval for 95th percentile of D is : ( "+str(lowerDper)+" , "+str(upperDper)+" )\n")
+f.close()
+
+print("Mean value for T is : ",supermeanT)
+print("Mean value for D is : ",supermeanD)
+
+print("95th percentile value for T is : ",T95mean)
+print("95th percentile value for D is : ",D95mean)
+
+print("Confidence interval for mean of T is : ( "+str(lowerTmean)+" , "+str(upperTmean)+" )")
+print("Confidence interval for mean of D is : ( "+str(lowerDmean)+" , "+str(upperDmean)+" )")
+
+print("Confidence interval for 95th percentile of T is : ( "+str(lowerTper)+" , "+str(upperTper)+" )")
+print("Confidence interval for 95th percentile of D is : ( "+str(lowerDper)+" , "+str(upperDper)+" )")
+
+#save output to csv file for plotting later
+filename='resultmean.csv'           
+with open(filename,'a', newline='') as myfile:
+    w = csv.writer(myfile)
+    w.writerow([supermeanT,supermeanD])
+
+filename='resultpercentile.csv'           
+with open(filename,'a', newline='') as myfile:
+    w = csv.writer(myfile)
+    w.writerow([T95mean,D95mean])
+    
+filename='resultCImean.csv'           
+with open(filename,'a', newline='') as myfile:
+    w = csv.writer(myfile)
+    w.writerow([lowerTmean,upperTmean,lowerDmean,upperDmean])
+    
+
+filename='resultCIper.csv'           
+with open(filename,'a', newline='') as myfile:
+    w = csv.writer(myfile)
+    w.writerow([lowerTper,upperTper,lowerDper,upperDper])
+    
+
+
