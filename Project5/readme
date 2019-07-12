@@ -1,0 +1,4 @@
+Support Vector Machines
+
+Consulted a paper on SVM guidelines to train the SVM algorithm on a dataset of two classes, each data point having two features.
+Reported best hyperparameter values based on cross-validation accuracy with the help of grid search.
