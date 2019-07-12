@@ -1,0 +1,5 @@
+Clustering
+
+Determined the best number of clusters in a data set using four clustering algorithms.
+Computed the clusters by applying Hierarchical, K means, DBSCAN and Gaussian decomposition algorithms and 
+identified the best clustering technique.
