@@ -1,0 +1,5 @@
+Time Series Forecasting
+
+Utilized three forecasting algorithms to determine the best model for a time series.
+Fit a simple moving average model, exponential smoothing model and AR model.
+Compared the models based on predicted values and accuracy.
